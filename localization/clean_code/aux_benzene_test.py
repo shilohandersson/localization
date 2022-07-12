@@ -53,11 +53,24 @@ def get_cross_overlap_matrix(ghost_atom_type,ghost_atom,atom_basis,mol):
     cross_overlap_matrix=mole.intor_cross('int1e_ovlp',mol,ghost_mol)
     return cross_overlap_matrix
 
+new_ao_ovlp = None
 for atom in ghost_list:
     cross_overlap_matrix = get_cross_overlap_matrix(ghost_atom_type,ghost_list,carbon_basis,mol)
-    print(cross_overlap_matrix.shape)
+    if new_ao_ovlp is None:
+        new_ao_ovlp = cross_overlap_matrix
+    else:
+        new_ao_ovlp = np.hstack((new_ao_ovlp,cross_overlap_matrix))
 
-benzene_LMOs = quick_localize(benzene_MOs[:,0:21],benzene_ovlp,ao_indices,startNoise=0.1)
-with open("jmol/noisy_benzene_PM.molden",'w') as f1:
+index = new_ao_ovlp.shape[1]
+new_ao_ovlp = np.hstack((new_ao_ovlp,benzene_ovlp[:,index:]))
+new_ao_ovlp = new_ao_ovlp.T
+
+aux_benzene_LMOs = quick_localize(benzene_MOs[:,0:21],new_ao_ovlp,ao_indices,startNoise=0)
+with open("jmol/aux_benzene_PM.molden",'w') as f1:
     molden.header(mol,f1)
-    molden.orbital_coeff(mol,f1,benzene_LMOs)
+    molden.orbital_coeff(mol,f1,aux_benzene_LMOs)
+
+#benzene_LMOs = quick_localize(benzene_MOs[:,0:21],benzene_ovlp,ao_indices,startNoise=0.1)
+#with open("jmol/noisy_benzene_PM.molden",'w') as f1:
+#    molden.header(mol,f1)
+#    molden.orbital_coeff(mol,f1,benzene_LMOs)
